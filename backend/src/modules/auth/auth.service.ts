@@ -1,26 +1,45 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthService {
-  create(createAuthDto: CreateAuthDto) {
-    return 'This action adds a new auth';
+  constructor(
+    private usersService: UsersService,
+    private jwtService: JwtService,
+  ) {}
+
+  async register(email: string, pass: string) {
+    const user = await this.usersService.create(email, pass);
+    return this.login(user.email, pass); // Auto-login after registration
   }
 
-  findAll() {
-    return `This action returns all auth`;
-  }
+  async login(email: string, pass: string) {
+    // 1. Find the user
+    const user = await this.usersService.findByEmail(email);
+    
+    // 2. Ensure the user exists AND actually has a password (they might have used OAuth!)
+    // This perfectly satisfies TypeScript's strict null checks.
+    if (!user || !user.password) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+    // 3. Verify the password mathematically
+    const isPasswordValid = await bcrypt.compare(pass, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+    // 4. Generate the JWT payload
+    const payload = { sub: user.id, email: user.email };
+    
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+      user: {
+        id: user.id,
+        email: user.email,
+      }
+    };
   }
 }
