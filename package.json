@@ -1,0 +1,24 @@
+{
+  "name": "real-time-kanban",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -c \"cyan,magenta\" -n \"NEST,EXPO\" \"cd backend && npm run start:dev\" \"cd frontend && npm run web\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/notrexxx/real-time-kanban.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/notrexxx/real-time-kanban/issues"
+  },
+  "homepage": "https://github.com/notrexxx/real-time-kanban#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}
