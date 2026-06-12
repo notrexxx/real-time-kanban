@@ -30,10 +30,12 @@ export class BoardsService {
   async findOne(id: string, userId: string) {
     const board = await this.boardsRepository.findOne({
       where: { id, user: { id: userId } },
-      // TypeORM v0.3+ strictly requires this object syntax for relations
+      // The exact fix: Tell TypeORM to dig one level deeper and fetch the cards!
       relations: {
-        columns: true, 
-      }, 
+        columns: {
+          cards: true,
+        },
+      },
     });
     
     if (!board) throw new NotFoundException('Board not found');

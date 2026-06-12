@@ -8,6 +8,7 @@ import { BoardsModule } from './modules/boards/boards.module';
 import { ColumnsModule } from './modules/columns/columns.module';
 import { CardsModule } from './modules/cards/cards.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { EventsModule } from './modules/events/events.module';
 
 @Module({
   imports: [
@@ -27,14 +28,11 @@ import { AuthModule } from './modules/auth/auth.module';
     }),
     
     UsersModule,
-    
     BoardsModule,
-    
     ColumnsModule,
-    
     CardsModule,
-    
     AuthModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

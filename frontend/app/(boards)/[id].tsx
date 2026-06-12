@@ -6,13 +6,20 @@ import { useBoardStore } from '../../store/boardStore';
 export default function BoardDetailScreen() {
   const { id } = useLocalSearchParams(); 
   const router = useRouter();
-  const { currentBoard, isLoading, fetchBoardById, createColumn, createCard } = useBoardStore();
+  const { currentBoard, isLoading, fetchBoardById, createColumn, createCard, initSocket, disconnectSocket } = useBoardStore();
   
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [newCardTitles, setNewCardTitles] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (id) fetchBoardById(String(id));
+    if (id) {
+      fetchBoardById(String(id));
+      initSocket(String(id));
+    }
+
+    return () => {
+      disconnectSocket();
+    };
   }, [id]);
 
   const handleAddColumn = async () => {

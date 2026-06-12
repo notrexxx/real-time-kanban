@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { io, Socket } from 'socket.io-client';
 import apiClient from '../api/client';
 
 export interface CardItem {
@@ -23,17 +24,49 @@ interface BoardState {
   boards: Board[];
   currentBoard: Board | null;
   isLoading: boolean;
+  socket: Socket | null;
+  
   fetchBoards: () => Promise<void>;
   createBoard: (name: string) => Promise<void>;
   fetchBoardById: (id: string) => Promise<void>;
   createColumn: (boardId: string, title: string) => Promise<void>;
   createCard: (columnId: string, title: string) => Promise<void>;
+  
+  initSocket: (boardId: string) => void;
+  disconnectSocket: () => void;
+  notifyBoardUpdate: (boardId: string) => void;
 }
 
 export const useBoardStore = create<BoardState>((set, get) => ({
   boards: [],
   currentBoard: null,
   isLoading: false,
+  socket: null,
+  
+  initSocket: (boardId: string) => {
+    const socket = io(process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000');
+    
+    socket.on(`board-updated-${boardId}`, () => {
+      get().fetchBoardById(boardId);
+    });
+
+    set({ socket });
+  },
+
+  disconnectSocket: () => {
+    const { socket } = get();
+    if (socket) {
+      socket.disconnect();
+      set({ socket: null });
+    }
+  },
+
+  notifyBoardUpdate: (boardId: string) => {
+    const { socket } = get();
+    if (socket) {
+      socket.emit('board-updated', { boardId });
+    }
+  },
   
   fetchBoards: async () => {
     set({ isLoading: true });
@@ -80,6 +113,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
             columns: [...(currentBoard.columns || []), { ...response.data, cards: [] }],
           },
         });
+        get().notifyBoardUpdate(boardId);
       }
     } catch (error) {
       console.error('Failed to create column', error);
@@ -100,6 +134,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         });
 
         set({ currentBoard: { ...currentBoard, columns: updatedColumns } });
+        get().notifyBoardUpdate(currentBoard.id);
       }
     } catch (error) {
       console.error('Failed to create card', error);
