@@ -2,18 +2,18 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, Up
 import { ColumnEntity } from '../../columns/entities/column.entity';
 
 @Entity('cards')
-export class Card {
+export class CardEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
   title: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ nullable: true })
   description: string;
 
-  @Column({ type: 'int', default: 0 })
-  position: number; // Tracks vertical ordering within the specific column
+  @Column({ default: 0 })
+  order: number;
 
   @ManyToOne(() => ColumnEntity, (column) => column.cards, { onDelete: 'CASCADE' })
   column: ColumnEntity;

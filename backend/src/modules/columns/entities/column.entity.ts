@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Board } from '../../boards/entities/board.entity';
-import { Card } from '../../cards/entities/card.entity';
+import { CardEntity } from '../../cards/entities/card.entity';
 
 @Entity('columns')
 export class ColumnEntity {
@@ -10,14 +10,14 @@ export class ColumnEntity {
   @Column()
   title: string;
 
-  @Column({ type: 'int', default: 0 })
-  position: number; // Tracks horizontal ordering
+  @Column({ default: 0 })
+  order: number;
 
   @ManyToOne(() => Board, (board) => board.columns, { onDelete: 'CASCADE' })
   board: Board;
 
-  @OneToMany(() => Card, (card) => card.column, { cascade: true })
-  cards: Card[];
+  @OneToMany(() => CardEntity, (card) => card.column, { cascade: true })
+  cards: CardEntity[];
 
   @CreateDateColumn()
   createdAt: Date;
