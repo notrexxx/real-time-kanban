@@ -21,7 +21,6 @@ export class CardsService {
     return this.cardsRepository.save(newCard);
   }
 
-  // 1. NEW BULK REORDER METHOD
   async reorder(cards: { id: string; order: number; columnId: string }[]) {
     // Update every affected card in the database at the exact same time
     await Promise.all(
@@ -48,5 +47,13 @@ export class CardsService {
     if (updateCardDto.order !== undefined) card.order = updateCardDto.order;
 
     return this.cardsRepository.save(card);
+  }
+
+  async remove(id: string) {
+    const result = await this.cardsRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException('Card not found');
+    }
+    return { success: true, message: 'Card deleted successfully' };
   }
 }

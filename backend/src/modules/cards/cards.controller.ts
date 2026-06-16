@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Patch, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { CardsService } from './cards.service';
 import { CreateCardDto } from './dto/create-card.dto';
@@ -14,7 +14,6 @@ export class CardsController {
     return this.cardsService.create(createCardDto);
   }
 
-  // MUST BE ABOVE THE :id ROUTE
   @Patch('reorder')
   reorderCards(@Body('cards') cards: { id: string; order: number; columnId: string }[]) {
     return this.cardsService.reorder(cards);
@@ -23,5 +22,10 @@ export class CardsController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateCardDto: UpdateCardDto) {
     return this.cardsService.update(id, updateCardDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.cardsService.remove(id);
   }
 }

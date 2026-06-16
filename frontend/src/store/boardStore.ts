@@ -12,6 +12,13 @@ interface BoardState {
   createColumn: (boardId: string, title: string) => Promise<void>;
   createCard: (columnId: string, title: string) => Promise<void>;
   moveCard: (cardId: string, sourceColId: string, destColId: string, newIndex: number) => Promise<void>;
+  
+  // NEW CRUD Methods
+  updateCard: (columnId: string, cardId: string, title: string) => Promise<void>;
+  deleteCard: (columnId: string, cardId: string) => Promise<void>;
+  updateBoard: (boardId: string, name: string) => Promise<void>;
+  deleteBoard: (boardId: string) => Promise<void>;
+
   addCollaborator: (boardId: string, email: string) => Promise<{ success: boolean; message?: string }>;
   lockCard: (cardId: string, email: string) => void;
   unlockCard: (cardId: string) => void;
@@ -125,6 +132,83 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     } catch (error) {
       console.error("Failed to save card move", error);
       get().fetchBoardById(currentBoard.id); 
+    }
+  },
+
+  // NEW: Update an existing card's title
+  updateCard: async (columnId, cardId, title) => {
+    try {
+      const response = await apiClient.patch(`/cards/${cardId}`, { title });
+      const updatedCard = response.data;
+      
+      set((state) => {
+        if (!state.currentBoard) return state;
+        const updatedColumns = state.currentBoard.columns.map((col: any) => {
+          if (col.id === columnId) {
+            return {
+              ...col,
+              cards: col.cards.map((c: any) => c.id === cardId ? updatedCard : c)
+            };
+          }
+          return col;
+        });
+        return { currentBoard: { ...state.currentBoard, columns: updatedColumns } };
+      });
+
+      const { socket, currentBoard } = get();
+      if (socket && currentBoard) socket.emit('board-updated', { boardId: currentBoard.id });
+    } catch (error) {
+      console.error("Failed to update card", error);
+    }
+  },
+
+  // NEW: Delete a card
+  deleteCard: async (columnId, cardId) => {
+    try {
+      await apiClient.delete(`/cards/${cardId}`);
+      
+      set((state) => {
+        if (!state.currentBoard) return state;
+        const updatedColumns = state.currentBoard.columns.map((col: any) => {
+          if (col.id === columnId) {
+            return { ...col, cards: col.cards.filter((c: any) => c.id !== cardId) };
+          }
+          return col;
+        });
+        return { currentBoard: { ...state.currentBoard, columns: updatedColumns } };
+      });
+
+      const { socket, currentBoard } = get();
+      if (socket && currentBoard) socket.emit('board-updated', { boardId: currentBoard.id });
+    } catch (error) {
+      console.error("Failed to delete card", error);
+    }
+  },
+
+  // NEW: Update the board's title
+  updateBoard: async (boardId, name) => {
+    try {
+      const response = await apiClient.patch(`/boards/${boardId}`, { name });
+      
+      set((state) => {
+        if (!state.currentBoard || state.currentBoard.id !== boardId) return state;
+        return { currentBoard: { ...state.currentBoard, name: response.data.name } };
+      });
+
+      const { socket } = get();
+      if (socket) socket.emit('board-updated', { boardId });
+    } catch (error) {
+      console.error("Failed to update board", error);
+    }
+  },
+
+  // NEW: Delete the board entirely
+  deleteBoard: async (boardId) => {
+    try {
+      await apiClient.delete(`/boards/${boardId}`);
+      set({ currentBoard: null });
+    } catch (error) {
+      console.error("Failed to delete board", error);
     }
   },
 
