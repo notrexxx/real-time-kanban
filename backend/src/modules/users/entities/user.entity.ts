@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Board } from '../../boards/entities/board.entity';
 
 @Entity('users')
@@ -10,10 +10,14 @@ export class User {
   email: string;
 
   @Column()
-  password?: string; // Optional if implementing OAuth later, required for local auth
+  password?: string; 
 
   @OneToMany(() => Board, (board) => board.user, { cascade: true })
   boards: Board[];
+
+
+  @ManyToMany(() => Board, (board) => board.collaborators)
+  sharedBoards: Board[];
 
   @CreateDateColumn()
   createdAt: Date;

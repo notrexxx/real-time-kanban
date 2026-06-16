@@ -14,8 +14,17 @@ export class BoardsController {
     return this.boardsService.create(createBoardDto, req.user.userId);
   }
 
+  @Post(':id/collaborators')
+  addCollaborator(
+    @Param('id') id: string, 
+    @Body('email') email: string,
+    @Request() req: any
+  ) {
+    return this.boardsService.addCollaborator(id, email, req.user.userId);
+  }
+
   @Get()
-  findAll(@Request() req: any) { // <-- Added : any
+  findAll(@Request() req: any) { 
     return this.boardsService.findAll(req.user.userId);
   }
 

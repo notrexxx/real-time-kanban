@@ -6,10 +6,15 @@ interface BoardState {
   currentBoard: any | null;
   isLoading: boolean;
   socket: Socket | null;
+  cursors: Record<string, { x: number; y: number; email: string }>;
+  lockedCards: Record<string, string>;
   fetchBoardById: (id: string) => Promise<void>;
   createColumn: (boardId: string, title: string) => Promise<void>;
   createCard: (columnId: string, title: string) => Promise<void>;
   moveCard: (cardId: string, sourceColId: string, destColId: string, newIndex: number) => Promise<void>;
+  addCollaborator: (boardId: string, email: string) => Promise<{ success: boolean; message?: string }>;
+  lockCard: (cardId: string, email: string) => void;
+  unlockCard: (cardId: string) => void;
   initSocket: (boardId: string) => void;
   disconnectSocket: () => void;
 }
@@ -18,6 +23,8 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   currentBoard: null,
   isLoading: false,
   socket: null,
+  cursors: {}, 
+  lockedCards: {},
 
   fetchBoardById: async (id) => {
     set({ isLoading: true });
@@ -83,28 +90,23 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const { currentBoard, socket } = get();
     if (!currentBoard) return;
 
-    // 1. Optimistic UI Array Clone
     const columns = JSON.parse(JSON.stringify(currentBoard.columns));
     const sourceCol = columns.find((c: any) => c.id === sourceColId);
     const destCol = columns.find((c: any) => c.id === destColId);
 
     if (!sourceCol || !destCol) return;
 
-    // 2. Shift the array on the screen
     const cardIndex = sourceCol.cards.findIndex((c: any) => c.id === cardId);
     const [movedCard] = sourceCol.cards.splice(cardIndex, 1);
     destCol.cards.splice(newIndex, 0, movedCard);
 
-    // 3. Compile the Bulk Payload
     const payload: { id: string; order: number; columnId: string }[] = [];
 
-    // Map new indices for the destination column
     destCol.cards.forEach((c: any, i: number) => {
       c.order = i;
       payload.push({ id: c.id, order: i, columnId: destCol.id });
     });
 
-    // Map new indices for the source column (if the card moved to a new list)
     if (sourceColId !== destColId) {
       sourceCol.cards.forEach((c: any, i: number) => {
         c.order = i;
@@ -114,7 +116,6 @@ export const useBoardStore = create<BoardState>((set, get) => ({
 
     set({ currentBoard: { ...currentBoard, columns } });
 
-    // 4. Fire the Bulk Update
     try {
       await apiClient.patch('/cards/reorder', { cards: payload });
 
@@ -124,6 +125,31 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     } catch (error) {
       console.error("Failed to save card move", error);
       get().fetchBoardById(currentBoard.id); 
+    }
+  },
+
+  addCollaborator: async (boardId, email) => {
+    try {
+      await apiClient.post(`/boards/${boardId}/collaborators`, { email });
+      get().fetchBoardById(boardId); 
+      return { success: true };
+    } catch (error: any) {
+      console.error("Failed to add collaborator", error);
+      return { success: false, message: error.response?.data?.message || "Failed to invite user" };
+    }
+  },
+
+  lockCard: (cardId, email) => {
+    const { currentBoard, socket } = get();
+    if (socket && currentBoard) {
+      socket.emit('card-lock', { boardId: currentBoard.id, cardId, email });
+    }
+  },
+
+  unlockCard: (cardId) => {
+    const { currentBoard, socket } = get();
+    if (socket && currentBoard) {
+      socket.emit('card-unlock', { boardId: currentBoard.id, cardId });
     }
   },
 
@@ -139,6 +165,37 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       get().fetchBoardById(boardId);
     });
 
+    newSocket.on(`cursor-updated-${boardId}`, (data: { socketId: string, x: number, y: number, email: string }) => {
+      set((state) => ({
+        cursors: {
+          ...state.cursors,
+          [data.socketId]: { x: data.x, y: data.y, email: data.email }
+        }
+      }));
+    });
+
+    newSocket.on(`card-locked-${boardId}`, (data: { cardId: string; email: string }) => {
+      set((state) => ({
+        lockedCards: { ...state.lockedCards, [data.cardId]: data.email }
+      }));
+    });
+
+    newSocket.on(`card-unlocked-${boardId}`, (data: { cardId: string }) => {
+      set((state) => {
+        const newLockedCards = { ...state.lockedCards };
+        delete newLockedCards[data.cardId];
+        return { lockedCards: newLockedCards };
+      });
+    });
+
+    newSocket.on('user-disconnected', (socketId: string) => {
+      set((state) => {
+        const newCursors = { ...state.cursors };
+        delete newCursors[socketId];
+        return { cursors: newCursors };
+      });
+    });
+
     set({ socket: newSocket });
   },
 
@@ -146,7 +203,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const { socket } = get();
     if (socket) {
       socket.disconnect();
-      set({ socket: null });
+      set({ socket: null, cursors: {}, lockedCards: {} }); 
     }
   }
 }));
