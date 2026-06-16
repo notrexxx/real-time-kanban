@@ -1,7 +1,6 @@
-import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, MessageBody } from '@nestjs/websockets';
+import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
-// Open the CORS gates so the frontend can connect
 @WebSocketGateway({ cors: { origin: '*' } })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -15,9 +14,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(`🔌 Client disconnected: ${client.id}`);
   }
 
-  // When a frontend sends this signal, broadcast it to everyone else
   @SubscribeMessage('board-updated')
-  handleBoardUpdate(@MessageBody() data: { boardId: string }) {
-    this.server.emit(`board-updated-${data.boardId}`);
+  handleBoardUpdate(@MessageBody() data: { boardId: string }, @ConnectedSocket() client: Socket) {
+    // client.broadcast sends the refresh signal to EVERYONE in the app EXCEPT the person dragging the card
+    client.broadcast.emit(`board-updated-${data.boardId}`);
   }
 }

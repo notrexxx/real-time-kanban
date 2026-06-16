@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently -c \"cyan,magenta\" -n \"NEST,EXPO\" \"cd backend && npm run start:dev\" \"cd frontend && npm run web\""
+    "dev": "concurrently \"npm --prefix backend run start:dev\" \"npm --prefix frontend run dev\"",
+    "install:all": "npm install && npm --prefix backend install && npm --prefix frontend install"
   },
   "repository": {
     "type": "git",
