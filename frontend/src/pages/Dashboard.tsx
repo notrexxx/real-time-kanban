@@ -49,9 +49,17 @@ export default function Dashboard() {
 
       <div className="mx-auto max-w-5xl relative z-10">
         <header className="mb-14 flex items-center justify-between">
-          <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-600 to-violet-500 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent pb-1">
-            Your Workspace
-          </h1>
+          
+          {/* UPDATED: Stronger typography and personalized greeting */}
+          <div className="flex flex-col">
+            <span className="text-sm font-bold tracking-widest text-indigo-500 dark:text-indigo-400 uppercase mb-1">
+              Welcome back, {user?.email?.split('@')[0]}
+            </span>
+            <h1 className="text-5xl font-black tracking-tighter bg-gradient-to-r from-indigo-600 to-violet-500 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent pb-1">
+              Your Workspace
+            </h1>
+          </div>
+
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-3 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white dark:border-zinc-800 shadow-sm">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-bold text-white shadow-md">
