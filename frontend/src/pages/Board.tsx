@@ -13,7 +13,8 @@ export default function Board() {
     currentBoard, isLoading, socket, cursors, lockedCards,
     fetchBoardById, createColumn, createCard, moveCard, 
     updateCard, deleteCard, updateBoard, deleteBoard, 
-    addCollaborator, lockCard, unlockCard, initSocket, disconnectSocket 
+    addCollaborator, lockCard, unlockCard, initSocket, disconnectSocket,
+    updateColumn, deleteColumn // <-- Hooked up the new store methods
   } = useBoardStore();
   
   const [newColumnTitle, setNewColumnTitle] = useState('');
@@ -28,6 +29,10 @@ export default function Board() {
   
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [editedCardTitle, setEditedCardTitle] = useState('');
+
+  // NEW: UI State for Editing Columns
+  const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
+  const [editedColumnTitle, setEditedColumnTitle] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -66,6 +71,25 @@ export default function Board() {
     if (e.key === 'Enter' && newColumnTitle.trim() && currentBoard) {
       await createColumn(currentBoard.id, newColumnTitle);
       setNewColumnTitle('');
+    }
+  };
+
+  // NEW: Handlers for Column Management
+  const startEditingColumn = (col: any) => {
+    setEditedColumnTitle(col.title);
+    setEditingColumnId(col.id);
+  };
+
+  const saveColumnTitle = async (columnId: string) => {
+    if (editedColumnTitle.trim() && editedColumnTitle !== currentBoard.columns.find((c:any) => c.id === columnId)?.title) {
+      await updateColumn(columnId, editedColumnTitle);
+    }
+    setEditingColumnId(null);
+  };
+
+  const handleDeleteColumn = async (columnId: string) => {
+    if (window.confirm("Are you sure you want to delete this list and all its cards?")) {
+      await deleteColumn(columnId);
     }
   };
 
@@ -146,7 +170,6 @@ export default function Board() {
   return (
     <div className="flex h-screen flex-col bg-zinc-50/50 dark:bg-zinc-950 font-sans selection:bg-indigo-200 dark:selection:bg-indigo-500/30 selection:text-indigo-900 dark:selection:text-indigo-100 relative overflow-hidden transition-colors duration-300" onMouseMove={handleMouseMove}>
       
-      {/* Decorative Blur Header Element */}
       <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-zinc-100 dark:from-zinc-900 to-transparent pointer-events-none z-0"></div>
 
       <header className="flex items-center justify-between border-b border-zinc-200/60 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-2xl px-8 py-5 z-20 shadow-sm">
@@ -180,7 +203,6 @@ export default function Board() {
               </h1>
             )}
 
-            {/* FIXED: Button is permanently visible but muted, lighting up on hover */}
             {isOwner && !isEditingBoardName && (
               <button 
                 onClick={handleDeleteBoard}
@@ -246,11 +268,50 @@ export default function Board() {
                 <div className="pointer-events-none absolute inset-0 rounded-[2rem] border border-zinc-200/50 dark:border-zinc-800/50 bg-zinc-100/60 dark:bg-zinc-800/30 backdrop-blur-md shadow-sm"></div>
 
                 <div className="relative flex h-full flex-col p-5">
-                  <div className="mb-6 flex items-center justify-between px-2 pt-2">
-                    <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 tracking-tight">{col.title}</h2>
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-200/80 dark:bg-zinc-700/80 text-[11px] font-extrabold text-zinc-600 dark:text-zinc-300 shadow-sm">
-                      {col.cards?.length || 0}
-                    </span>
+                  
+                  {/* UPDATED: Hover-to-Reveal Column Controls */}
+                  <div className="group/col-header mb-6 flex items-center justify-between px-2 pt-2 h-8">
+                    {editingColumnId === col.id ? (
+                      <input
+                        autoFocus
+                        className="text-lg font-bold text-zinc-800 dark:text-zinc-100 outline-none bg-transparent border-b-[2px] border-indigo-500 w-full mr-3"
+                        value={editedColumnTitle}
+                        onChange={(e) => setEditedColumnTitle(e.target.value)}
+                        onBlur={() => saveColumnTitle(col.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveColumnTitle(col.id);
+                          if (e.key === 'Escape') setEditingColumnId(null);
+                        }}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-between w-full overflow-hidden">
+                        <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 tracking-tight truncate pr-2">{col.title}</h2>
+                        
+                        <div className="flex items-center opacity-0 group-hover/col-header:opacity-100 transition-opacity shrink-0">
+                          <button 
+                            onClick={() => startEditingColumn(col)}
+                            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-200/80 dark:hover:bg-zinc-700/80 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                            title="Rename List"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteColumn(col.id)}
+                            className="rounded-lg p-1.5 text-zinc-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                            title="Delete List"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Hide the card count badge while actively editing to keep the layout clean */}
+                    {editingColumnId !== col.id && (
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-200/80 dark:bg-zinc-700/80 text-[11px] font-extrabold text-zinc-600 dark:text-zinc-300 shadow-sm ml-2 group-hover/col-header:opacity-0 transition-opacity">
+                        {col.cards?.length || 0}
+                      </span>
+                    )}
                   </div>
 
                   <Droppable droppableId={col.id}>
