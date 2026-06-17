@@ -16,22 +16,18 @@ export class AuthService {
   }
 
   async login(email: string, pass: string) {
-    // 1. Find the user
+
     const user = await this.usersService.findByEmail(email);
     
-    // 2. Ensure the user exists AND actually has a password (they might have used OAuth!)
-    // This perfectly satisfies TypeScript's strict null checks.
     if (!user || !user.password) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // 3. Verify the password mathematically
     const isPasswordValid = await bcrypt.compare(pass, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // 4. Generate the JWT payload
     const payload = { sub: user.id, email: user.email };
     
     return {

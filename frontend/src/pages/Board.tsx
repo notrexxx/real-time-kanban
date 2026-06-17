@@ -231,110 +231,119 @@ export default function Board() {
           <div className="flex h-full items-start gap-8 pb-8">
             
             {currentBoard.columns?.map((col: any) => (
-              <div key={col.id} className="flex h-full max-h-full w-[340px] shrink-0 flex-col rounded-[2rem] border border-zinc-200/50 dark:border-zinc-800/50 bg-zinc-100/60 dark:bg-zinc-800/30 p-5 shadow-sm backdrop-blur-md">
-                <div className="mb-6 flex items-center justify-between px-2 pt-2">
-                  <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 tracking-tight">{col.title}</h2>
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-200/80 dark:bg-zinc-700/80 text-[11px] font-extrabold text-zinc-600 dark:text-zinc-300 shadow-sm">
-                    {col.cards?.length || 0}
-                  </span>
-                </div>
+              /* THE FIX: We split the Column into a wrapper, an absolute glass background, and the relative content */
+              <div key={col.id} className="relative flex h-full max-h-full w-[340px] shrink-0 flex-col">
+                
+                {/* 1. The Isolated Glass Background (Sits entirely behind the content and creates the blur) */}
+                <div className="pointer-events-none absolute inset-0 rounded-[2rem] border border-zinc-200/50 dark:border-zinc-800/50 bg-zinc-100/60 dark:bg-zinc-800/30 backdrop-blur-md shadow-sm"></div>
 
-                <Droppable droppableId={col.id}>
-                  {(provided, snapshot) => (
-                    <div 
-                      {...provided.droppableProps} 
-                      ref={provided.innerRef}
-                      className={`flex-1 overflow-y-auto px-1 transition-colors rounded-2xl ${snapshot.isDraggingOver ? 'bg-indigo-50/60 dark:bg-indigo-500/10 ring-2 ring-indigo-500/20 dark:ring-indigo-500/30' : ''}`}
-                    >
-                      {col.cards?.map((card: any, index: number) => (
-                        <Draggable 
-                          key={card.id} 
-                          draggableId={card.id} 
-                          index={index}
-                          isDragDisabled={!!lockedCards[card.id] || editingCardId === card.id}
-                        >
-                          {(provided, snapshot) => {
-                            const lockedBy = lockedCards[card.id];
-                            const isLockedByOther = !!lockedBy;
-                            const isEditingThisCard = editingCardId === card.id;
+                {/* 2. The Content Wrapper (Sits on top of the glass, free from the blur boundaries) */}
+                <div className="relative flex h-full flex-col p-5">
+                  <div className="mb-6 flex items-center justify-between px-2 pt-2">
+                    <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 tracking-tight">{col.title}</h2>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-200/80 dark:bg-zinc-700/80 text-[11px] font-extrabold text-zinc-600 dark:text-zinc-300 shadow-sm">
+                      {col.cards?.length || 0}
+                    </span>
+                  </div>
 
-                            return (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className={`group mb-4 relative flex cursor-grab flex-col justify-center rounded-2xl border bg-white dark:bg-zinc-900 p-5 shadow-sm transition-all duration-300 active:cursor-grabbing 
-                                  ${snapshot.isDragging ? 'scale-105 shadow-[0_20px_40px_-10px_rgba(79,70,229,0.3)] ring-[3px] ring-indigo-500 border-transparent z-50' : 'border-zinc-200/60 dark:border-zinc-700/60 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]'}
-                                  ${isLockedByOther ? 'border-rose-300 dark:border-rose-800 ring-2 ring-rose-300 dark:ring-rose-800 bg-rose-50/80 dark:bg-rose-900/20 opacity-80 cursor-not-allowed' : ''}
-                                  ${isEditingThisCard ? 'cursor-default ring-[3px] ring-indigo-500 border-transparent shadow-md' : ''}
-                                `}
-                                style={provided.draggableProps.style}
-                              >
-                                {isEditingThisCard ? (
-                                  <input
-                                    autoFocus
-                                    className="w-full text-base font-semibold text-zinc-900 dark:text-zinc-50 outline-none bg-transparent"
-                                    value={editedCardTitle}
-                                    onChange={(e) => setEditedCardTitle(e.target.value)}
-                                    onBlur={() => saveCardTitle(col.id, card.id)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') saveCardTitle(col.id, card.id);
-                                      if (e.key === 'Escape') setEditingCardId(null);
-                                    }}
-                                  />
-                                ) : (
-                                  <div className="flex items-start justify-between gap-3">
-                                    <p className="text-base font-medium leading-relaxed text-zinc-800 dark:text-zinc-200 break-words flex-1">{card.title}</p>
-                                    
-                                    {!isLockedByOther && (
-                                      <div className="flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                                        <button 
-                                          onClick={(e) => { e.stopPropagation(); startEditingCard(card); }}
-                                          className="rounded-lg p-2 text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                                          title="Edit Card"
-                                        >
-                                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                        </button>
-                                        <button 
-                                          onClick={(e) => { e.stopPropagation(); handleDeleteCard(col.id, card.id); }}
-                                          className="rounded-lg p-2 text-zinc-400 dark:text-zinc-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
-                                          title="Delete Card"
-                                        >
-                                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+                  <Droppable droppableId={col.id}>
+                    {(provided, snapshot) => (
+                      <div 
+                        {...provided.droppableProps} 
+                        ref={provided.innerRef}
+                        className={`flex-1 overflow-y-auto px-1 transition-colors rounded-2xl ${snapshot.isDraggingOver ? 'bg-indigo-50/60 dark:bg-indigo-500/10 ring-2 ring-indigo-500/20 dark:ring-indigo-500/30' : ''}`}
+                      >
+                        {col.cards?.map((card: any, index: number) => (
+                          <Draggable 
+                            key={card.id} 
+                            draggableId={card.id} 
+                            index={index}
+                            isDragDisabled={!!lockedCards[card.id] || editingCardId === card.id}
+                          >
+                            {(provided, snapshot) => {
+                              const lockedBy = lockedCards[card.id];
+                              const isLockedByOther = !!lockedBy;
+                              const isEditingThisCard = editingCardId === card.id;
 
-                                {isLockedByOther && (
-                                  <div className="mt-4 flex items-center gap-2 rounded-lg bg-white/60 dark:bg-zinc-950/60 p-2">
-                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400">
-                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                              return (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  /* FIX: Replaced transition-all with specific transitions to prevent mouse lag */
+                                  className={`group mb-4 relative flex cursor-grab flex-col justify-center rounded-2xl border bg-white dark:bg-zinc-900 p-5 shadow-sm transition-colors transition-shadow duration-300 active:cursor-grabbing 
+                                    ${snapshot.isDragging ? 'scale-105 shadow-[0_20px_40px_-10px_rgba(79,70,229,0.3)] ring-[3px] ring-indigo-500 border-transparent z-[100]' : 'border-zinc-200/60 dark:border-zinc-700/60 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]'}
+                                    ${isLockedByOther ? 'border-rose-300 dark:border-rose-800 ring-2 ring-rose-300 dark:ring-rose-800 bg-rose-50/80 dark:bg-rose-900/20 opacity-80 cursor-not-allowed' : ''}
+                                    ${isEditingThisCard ? 'cursor-default ring-[3px] ring-indigo-500 border-transparent shadow-md' : ''}
+                                  `}
+                                  style={provided.draggableProps.style}
+                                >
+                                  {isEditingThisCard ? (
+                                    <input
+                                      autoFocus
+                                      className="w-full text-base font-semibold text-zinc-900 dark:text-zinc-50 outline-none bg-transparent"
+                                      value={editedCardTitle}
+                                      onChange={(e) => setEditedCardTitle(e.target.value)}
+                                      onBlur={() => saveCardTitle(col.id, card.id)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') saveCardTitle(col.id, card.id);
+                                        if (e.key === 'Escape') setEditingCardId(null);
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="flex items-start justify-between gap-3">
+                                      <p className="text-base font-medium leading-relaxed text-zinc-800 dark:text-zinc-200 break-words flex-1">{card.title}</p>
+                                      
+                                      {!isLockedByOther && (
+                                        <div className="flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                                          <button 
+                                            onClick={(e) => { e.stopPropagation(); startEditingCard(card); }}
+                                            className="rounded-lg p-2 text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                                            title="Edit Card"
+                                          >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                          </button>
+                                          <button 
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteCard(col.id, card.id); }}
+                                            className="rounded-lg p-2 text-zinc-400 dark:text-zinc-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+                                            title="Delete Card"
+                                          >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                          </button>
+                                        </div>
+                                      )}
                                     </div>
-                                    <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest selection:bg-transparent">
-                                      {lockedBy.split('@')[0]} is editing
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
+                                  )}
 
-                <input
-                  type="text"
-                  placeholder="+ Add a card..."
-                  className="mt-4 w-full rounded-2xl border border-transparent bg-white/50 dark:bg-zinc-900/50 p-4 text-sm font-bold text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition-all hover:bg-white dark:hover:bg-zinc-900 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:bg-white dark:focus:bg-zinc-900 focus:ring-4 focus:ring-indigo-500/10 focus:shadow-sm"
-                  value={newCardTitles[col.id] || ''}
-                  onChange={(e) => setNewCardTitles({ ...newCardTitles, [col.id]: e.target.value })}
-                  onKeyDown={(e) => handleAddCard(e, col.id)}
-                />
+                                  {isLockedByOther && (
+                                    <div className="mt-4 flex items-center gap-2 rounded-lg bg-white/60 dark:bg-zinc-950/60 p-2">
+                                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                      </div>
+                                      <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest selection:bg-transparent">
+                                        {lockedBy.split('@')[0]} is editing
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            }}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+
+                  <input
+                    type="text"
+                    placeholder="+ Add a card..."
+                    className="mt-4 w-full rounded-2xl border border-transparent bg-white/50 dark:bg-zinc-900/50 p-4 text-sm font-bold text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition-all hover:bg-white dark:hover:bg-zinc-900 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:bg-white dark:focus:bg-zinc-900 focus:ring-4 focus:ring-indigo-500/10 focus:shadow-sm"
+                    value={newCardTitles[col.id] || ''}
+                    onChange={(e) => setNewCardTitles({ ...newCardTitles, [col.id]: e.target.value })}
+                    onKeyDown={(e) => handleAddCard(e, col.id)}
+                  />
+                </div>
               </div>
             ))}
 

@@ -1,4 +1,5 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Get, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -10,9 +11,16 @@ export class AuthController {
     return this.authService.register(body.email, body.password);
   }
 
-  @HttpCode(HttpStatus.OK) // Login should return 200 OK, not 201 Created
+  @HttpCode(HttpStatus.OK) 
   @Post('login')
   async login(@Body() body: Record<string, string>) {
     return this.authService.login(body.email, body.password);
+  }
+
+ 
+  @UseGuards(AuthGuard('jwt'))
+  @Get('profile')
+  getProfile(@Request() req: any) { 
+    return req.user; 
   }
 }

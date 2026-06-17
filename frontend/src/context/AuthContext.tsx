@@ -10,7 +10,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>; // NEW
+  register: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -22,15 +22,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const checkAuth = async () => {
+      console.log("🔍 [Auth] Checking for saved token...");
       const token = localStorage.getItem('token');
+      
       if (token) {
         try {
-          const response = await apiClient.get('/auth/profile'); 
-          setUser(response.data);
-        } catch (error) {
+          console.log("📡 [Auth] Token found! Pinging /auth/profile...");
+          const response = await apiClient.get('/auth/profile');
+          console.log("✅ [Auth] Backend recognized token! User data:", response.data);
+          setUser(response.data); 
+        } catch (error: any) {
+          console.error("❌ [Auth] Backend rejected token!", error.response?.status, error.response?.data);
           localStorage.removeItem('token');
           setUser(null);
         }
+      } else {
+        console.log("⚠️ [Auth] No token found in local storage.");
       }
       setIsLoading(false);
     };
@@ -39,17 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await apiClient.post('/auth/login', { email, password });
-    
-    // Save the string token to local storage
     localStorage.setItem('token', response.data.access_token);
-    
-    // Set the actual User OBJECT to state, NOT the token string!
     setUser(response.data.user); 
   };
 
   const register = async (email: string, password: string) => {
     const response = await apiClient.post('/auth/register', { email, password });
-    
     localStorage.setItem('token', response.data.access_token);
     setUser(response.data.user); 
   };
