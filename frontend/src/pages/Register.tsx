@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-export default function Login() {
+export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   
-  const { login } = useAuth(); 
+  const { register } = useAuth(); 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,10 +17,10 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      navigate('/'); 
+      await register(email, password);
+      navigate('/'); // Send to dashboard on success
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to sign in. Please check your credentials.');
+      setError(err.response?.data?.message || 'Failed to create account. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -41,13 +41,14 @@ export default function Login() {
             {/* App Logo/Icon Placeholder */}
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-lg shadow-indigo-500/30">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="8" y1="12" x2="16" y2="12"></line>
-                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
               </svg>
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">Welcome back</h1>
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Sign in to your workspace to continue.</p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">Create an account</h1>
+            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Join your team's workspace today.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -69,6 +70,7 @@ export default function Login() {
                 type="password"
                 placeholder="••••••••"
                 required
+                minLength={6}
                 className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 text-base font-medium text-zinc-900 dark:text-zinc-100 outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:border-indigo-500 focus:bg-white dark:focus:bg-zinc-900 focus:ring-4 focus:ring-indigo-500/10"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -91,21 +93,20 @@ export default function Login() {
               {isLoading ? (
                 <>
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
-                  Signing in...
+                  Creating account...
                 </>
               ) : (
-                'Sign In'
+                'Sign Up'
               )}
             </button>
           </form>
 
         </div>
 
-        {/* Register Link (Optional based on your routing) */}
         <p className="mt-8 text-center text-sm font-medium text-zinc-500 dark:text-zinc-400">
-          Don't have an account?{' '}
-          <Link to="/register" className="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors">
-            Sign up for free
+          Already have an account?{' '}
+          <Link to="/login" className="font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors">
+            Sign in
           </Link>
         </p>
       </div>

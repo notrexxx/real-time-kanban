@@ -29,6 +29,10 @@ export class BoardsService {
         { user: { id: userId } },
         { collaborators: { id: userId } }
       ],
+      // FIXED: We must explicitly include the user (Owner) data so the frontend can filter the lists!
+      relations: {
+        user: true, 
+      },
       order: { createdAt: 'ASC' }, 
     });
   }
@@ -42,7 +46,7 @@ export class BoardsService {
       relations: {
         columns: { cards: true },
         collaborators: true, 
-        user: true, // FIXED: Now the frontend will always receive the Owner's avatar data!
+        user: true, 
       },
     });
     

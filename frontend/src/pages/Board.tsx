@@ -7,27 +7,13 @@ import { useAuth } from '../context/AuthContext';
 export default function Board() {
   const { id } = useParams<{ id: string }>(); 
   const { user } = useAuth(); 
-  const navigate = useNavigate(); // NEW: Needed to redirect after deleting a board
+  const navigate = useNavigate(); 
   
   const { 
-    currentBoard, 
-    isLoading, 
-    socket, 
-    cursors, 
-    lockedCards,
-    fetchBoardById, 
-    createColumn, 
-    createCard, 
-    moveCard, 
-    updateCard,     // NEW
-    deleteCard,     // NEW
-    updateBoard,    // NEW
-    deleteBoard,    // NEW
-    addCollaborator, 
-    lockCard,
-    unlockCard,
-    initSocket, 
-    disconnectSocket 
+    currentBoard, isLoading, socket, cursors, lockedCards,
+    fetchBoardById, createColumn, createCard, moveCard, 
+    updateCard, deleteCard, updateBoard, deleteBoard, 
+    addCollaborator, lockCard, unlockCard, initSocket, disconnectSocket 
   } = useBoardStore();
   
   const [newColumnTitle, setNewColumnTitle] = useState('');
@@ -37,7 +23,6 @@ export default function Board() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteMessage, setInviteMessage] = useState('');
 
-  // NEW: State for Inline Editing
   const [isEditingBoardName, setIsEditingBoardName] = useState(false);
   const [editedBoardName, setEditedBoardName] = useState('');
   
@@ -76,8 +61,6 @@ export default function Board() {
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
     moveCard(draggableId, source.droppableId, destination.droppableId, destination.index);
   };
-
-  // --- CRUD HANDLERS ---
 
   const handleAddColumn = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && newColumnTitle.trim() && currentBoard) {
@@ -126,8 +109,6 @@ export default function Board() {
     }
   };
 
-  // --- END CRUD HANDLERS ---
-
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim() || !currentBoard) return;
@@ -154,29 +135,30 @@ export default function Board() {
 
   if (isLoading || !currentBoard) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-50">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+      <div className="flex h-screen w-full items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+        <div className="h-12 w-12 animate-spin rounded-full border-[5px] border-indigo-100 dark:border-indigo-900 border-t-indigo-600 dark:border-t-indigo-400"></div>
       </div>
     );
   }
 
-  // Check if current user is the owner
   const isOwner = currentBoard.user && user?.email === currentBoard.user.email;
 
   return (
-    <div className="flex h-screen flex-col bg-slate-50 relative overflow-hidden" onMouseMove={handleMouseMove}>
+    <div className="flex h-screen flex-col bg-zinc-50/50 dark:bg-zinc-950 font-sans selection:bg-indigo-200 dark:selection:bg-indigo-500/30 selection:text-indigo-900 dark:selection:text-indigo-100 relative overflow-hidden transition-colors duration-300" onMouseMove={handleMouseMove}>
       
-      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 z-10">
+      {/* Decorative Blur Header Element */}
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-zinc-100 dark:from-zinc-900 to-transparent pointer-events-none z-0"></div>
+
+      <header className="flex items-center justify-between border-b border-zinc-200/60 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-2xl px-8 py-5 z-20 shadow-sm">
         <div className="flex items-center gap-6">
-          <Link to="/" className="text-sm font-bold text-slate-500 transition-colors hover:text-blue-600">
-            ← Dashboard
+          <Link to="/" className="flex items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-900 p-2.5 text-zinc-500 dark:text-zinc-400 transition-all hover:bg-indigo-50 dark:hover:bg-indigo-500/20 hover:text-indigo-600 dark:hover:text-indigo-400">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
           </Link>
 
-          {/* Inline Edit for Board Title (Only owner can edit) */}
           {isEditingBoardName ? (
             <input
               autoFocus
-              className="text-xl font-bold text-slate-900 outline-none border-b-2 border-blue-500 bg-transparent"
+              className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50 outline-none border-b-[3px] border-indigo-500 bg-transparent py-1"
               value={editedBoardName}
               onChange={(e) => setEditedBoardName(e.target.value)}
               onBlur={saveBoardName}
@@ -190,7 +172,7 @@ export default function Board() {
                   setIsEditingBoardName(true);
                 }
               }} 
-              className={`text-xl font-bold text-slate-900 ${isOwner ? 'cursor-text hover:bg-slate-100 rounded px-2 -ml-2 py-0.5 transition-colors' : ''}`}
+              className={`text-3xl font-extrabold tracking-tight bg-gradient-to-r from-zinc-900 to-zinc-700 dark:from-zinc-50 dark:to-zinc-300 bg-clip-text text-transparent ${isOwner ? 'cursor-text hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 rounded-xl px-3 -ml-3 py-1 transition-colors' : ''}`}
               title={isOwner ? "Click to edit title" : ""}
             >
               {currentBoard.name}
@@ -198,27 +180,27 @@ export default function Board() {
           )}
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex -space-x-2 mr-2">
+        <div className="flex items-center gap-5">
+          <div className="flex -space-x-3 mr-4">
             
             {currentBoard.user && (
-              <div className="relative">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-xs font-bold text-white shadow-sm" title={`Owner: ${currentBoard.user.email}`}>
+              <div className="relative z-10 hover:z-20 transition-transform hover:scale-110 cursor-default">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full ring-[3px] ring-white dark:ring-zinc-950 bg-gradient-to-br from-indigo-500 to-violet-500 text-sm font-bold text-white shadow-md" title={`Owner: ${currentBoard.user.email}`}>
                   {currentBoard.user.email[0].toUpperCase()}
                 </div>
                 {isOnline(currentBoard.user.email) && (
-                  <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white"></span>
+                  <span className="absolute bottom-0 right-0 block h-3.5 w-3.5 rounded-full bg-emerald-400 ring-[3px] ring-white dark:ring-zinc-950 shadow-sm"></span>
                 )}
               </div>
             )}
 
             {currentBoard.collaborators?.map((collab: any) => (
-              <div key={collab.id} className="relative">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-slate-400 text-xs font-bold text-white shadow-sm" title={collab.email}>
+              <div key={collab.id} className="relative z-10 hover:z-20 transition-transform hover:scale-110 cursor-default">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full ring-[3px] ring-white dark:ring-zinc-950 bg-zinc-300 dark:bg-zinc-700 text-sm font-bold text-white shadow-md" title={collab.email}>
                   {collab.email[0].toUpperCase()}
                 </div>
                 {isOnline(collab.email) && (
-                  <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white"></span>
+                  <span className="absolute bottom-0 right-0 block h-3.5 w-3.5 rounded-full bg-emerald-400 ring-[3px] ring-white dark:ring-zinc-950 shadow-sm"></span>
                 )}
               </div>
             ))}
@@ -226,35 +208,33 @@ export default function Board() {
 
           <button 
             onClick={() => setIsShareModalOpen(true)}
-            className="flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2 text-sm font-bold text-blue-600 transition-colors hover:bg-blue-100"
+            className="flex items-center gap-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 px-5 py-2.5 text-sm font-extrabold text-indigo-600 dark:text-indigo-400 transition-all hover:bg-indigo-100 dark:hover:bg-indigo-500/20 hover:shadow-sm"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
             Share
           </button>
 
-          {/* Delete Board Button (Only for Owners) */}
           {isOwner && (
             <button 
               onClick={handleDeleteBoard}
-              className="flex items-center justify-center rounded-lg bg-red-50 p-2 text-red-500 transition-colors hover:bg-red-100 hover:text-red-600"
+              className="flex items-center justify-center rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 text-zinc-400 dark:text-zinc-500 shadow-sm transition-all hover:border-rose-200 dark:hover:border-rose-900 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-400 hover:shadow-md"
               title="Delete Board"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             </button>
           )}
-
         </div>
       </header>
 
-      <main className="flex-1 overflow-x-auto p-6">
+      <main className="flex-1 overflow-x-auto p-8 relative z-10">
         <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="flex h-full items-start gap-6">
+          <div className="flex h-full items-start gap-8 pb-8">
             
             {currentBoard.columns?.map((col: any) => (
-              <div key={col.id} className="flex h-full max-h-[90%] w-80 shrink-0 flex-col rounded-xl bg-slate-100 p-4">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="font-bold text-slate-900">{col.title}</h2>
-                  <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-500">
+              <div key={col.id} className="flex h-full max-h-full w-[340px] shrink-0 flex-col rounded-[2rem] border border-zinc-200/50 dark:border-zinc-800/50 bg-zinc-100/60 dark:bg-zinc-800/30 p-5 shadow-sm backdrop-blur-md">
+                <div className="mb-6 flex items-center justify-between px-2 pt-2">
+                  <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 tracking-tight">{col.title}</h2>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-200/80 dark:bg-zinc-700/80 text-[11px] font-extrabold text-zinc-600 dark:text-zinc-300 shadow-sm">
                     {col.cards?.length || 0}
                   </span>
                 </div>
@@ -264,7 +244,7 @@ export default function Board() {
                     <div 
                       {...provided.droppableProps} 
                       ref={provided.innerRef}
-                      className={`flex-1 overflow-y-auto transition-colors px-1 ${snapshot.isDraggingOver ? 'bg-slate-200/50 rounded-lg' : ''}`}
+                      className={`flex-1 overflow-y-auto px-1 transition-colors rounded-2xl ${snapshot.isDraggingOver ? 'bg-indigo-50/60 dark:bg-indigo-500/10 ring-2 ring-indigo-500/20 dark:ring-indigo-500/30' : ''}`}
                     >
                       {col.cards?.map((card: any, index: number) => (
                         <Draggable 
@@ -283,17 +263,17 @@ export default function Board() {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`group mb-3 relative flex cursor-grab flex-col justify-center rounded-lg border bg-white p-4 shadow-sm transition-all active:cursor-grabbing 
-                                  ${snapshot.isDragging ? 'scale-105 shadow-lg shadow-blue-500/20 ring-2 ring-blue-500' : 'hover:border-slate-300 hover:shadow-md'}
-                                  ${isLockedByOther ? 'border-red-400 ring-1 ring-red-400 bg-red-50/60 opacity-75 cursor-not-allowed' : 'border-slate-200'}
-                                  ${isEditingThisCard ? 'cursor-default ring-2 ring-blue-500 border-blue-500' : ''}
+                                className={`group mb-4 relative flex cursor-grab flex-col justify-center rounded-2xl border bg-white dark:bg-zinc-900 p-5 shadow-sm transition-all duration-300 active:cursor-grabbing 
+                                  ${snapshot.isDragging ? 'scale-105 shadow-[0_20px_40px_-10px_rgba(79,70,229,0.3)] ring-[3px] ring-indigo-500 border-transparent z-50' : 'border-zinc-200/60 dark:border-zinc-700/60 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]'}
+                                  ${isLockedByOther ? 'border-rose-300 dark:border-rose-800 ring-2 ring-rose-300 dark:ring-rose-800 bg-rose-50/80 dark:bg-rose-900/20 opacity-80 cursor-not-allowed' : ''}
+                                  ${isEditingThisCard ? 'cursor-default ring-[3px] ring-indigo-500 border-transparent shadow-md' : ''}
                                 `}
                                 style={provided.draggableProps.style}
                               >
                                 {isEditingThisCard ? (
                                   <input
                                     autoFocus
-                                    className="w-full text-sm font-medium text-slate-900 outline-none"
+                                    className="w-full text-base font-semibold text-zinc-900 dark:text-zinc-50 outline-none bg-transparent"
                                     value={editedCardTitle}
                                     onChange={(e) => setEditedCardTitle(e.target.value)}
                                     onBlur={() => saveCardTitle(col.id, card.id)}
@@ -303,24 +283,24 @@ export default function Board() {
                                     }}
                                   />
                                 ) : (
-                                  <div className="flex items-start justify-between gap-2">
-                                    <p className="text-sm font-medium text-slate-700 break-words flex-1">{card.title}</p>
+                                  <div className="flex items-start justify-between gap-3">
+                                    <p className="text-base font-medium leading-relaxed text-zinc-800 dark:text-zinc-200 break-words flex-1">{card.title}</p>
                                     
                                     {!isLockedByOther && (
-                                      <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                                      <div className="flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                                         <button 
                                           onClick={(e) => { e.stopPropagation(); startEditingCard(card); }}
-                                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+                                          className="rounded-lg p-2 text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                                           title="Edit Card"
                                         >
-                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                         </button>
                                         <button 
                                           onClick={(e) => { e.stopPropagation(); handleDeleteCard(col.id, card.id); }}
-                                          className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                                          className="rounded-lg p-2 text-zinc-400 dark:text-zinc-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
                                           title="Delete Card"
                                         >
-                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                         </button>
                                       </div>
                                     )}
@@ -328,10 +308,14 @@ export default function Board() {
                                 )}
 
                                 {isLockedByOther && (
-                                  <span className="mt-2 text-[10px] font-bold text-red-500 uppercase tracking-wider flex items-center gap-1 selection:bg-transparent">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                                    {lockedBy.split('@')[0]} is editing
-                                  </span>
+                                  <div className="mt-4 flex items-center gap-2 rounded-lg bg-white/60 dark:bg-zinc-950/60 p-2">
+                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400">
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                    </div>
+                                    <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest selection:bg-transparent">
+                                      {lockedBy.split('@')[0]} is editing
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                             );
@@ -346,7 +330,7 @@ export default function Board() {
                 <input
                   type="text"
                   placeholder="+ Add a card..."
-                  className="mt-3 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="mt-4 w-full rounded-2xl border border-transparent bg-white/50 dark:bg-zinc-900/50 p-4 text-sm font-bold text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 outline-none transition-all hover:bg-white dark:hover:bg-zinc-900 focus:border-indigo-300 dark:focus:border-indigo-500/50 focus:bg-white dark:focus:bg-zinc-900 focus:ring-4 focus:ring-indigo-500/10 focus:shadow-sm"
                   value={newCardTitles[col.id] || ''}
                   onChange={(e) => setNewCardTitles({ ...newCardTitles, [col.id]: e.target.value })}
                   onKeyDown={(e) => handleAddCard(e, col.id)}
@@ -354,11 +338,11 @@ export default function Board() {
               </div>
             ))}
 
-            <div className="w-80 shrink-0">
+            <div className="w-[340px] shrink-0">
               <input
                 type="text"
-                placeholder="+ Add a list..."
-                className="w-full rounded-xl border border-slate-200 bg-white p-4 font-medium outline-none transition-all focus:border-blue-500 focus:shadow-md"
+                placeholder="+ Add another list"
+                className="w-full rounded-[2rem] border-[3px] border-dashed border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-100/50 dark:bg-zinc-900/50 p-6 text-lg font-bold text-zinc-700 dark:text-zinc-300 outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:bg-white dark:hover:bg-zinc-900 focus:border-indigo-500 focus:bg-white dark:focus:bg-zinc-900 focus:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:focus:shadow-none focus:text-zinc-900 dark:focus:text-zinc-50"
                 value={newColumnTitle}
                 onChange={(e) => setNewColumnTitle(e.target.value)}
                 onKeyDown={handleAddColumn}
@@ -370,35 +354,37 @@ export default function Board() {
       </main>
 
       {isShareModalOpen && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-opacity">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">Share Board</h2>
-              <button onClick={() => setIsShareModalOpen(false)} className="text-slate-400 transition-colors hover:text-slate-600">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-zinc-900/40 dark:bg-zinc-950/60 backdrop-blur-md transition-opacity">
+          <div className="w-full max-w-md rounded-[2rem] bg-white dark:bg-zinc-900 p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] dark:shadow-none border border-zinc-100 dark:border-zinc-800">
+            <div className="mb-8 flex items-center justify-between">
+              <h2 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">Share Board</h2>
+              <button onClick={() => setIsShareModalOpen(false)} className="rounded-full bg-zinc-100 dark:bg-zinc-800 p-2.5 text-zinc-500 dark:text-zinc-400 transition-all hover:bg-rose-100 dark:hover:bg-rose-500/20 hover:text-rose-600 dark:hover:text-rose-400 hover:rotate-90">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
-            <p className="mb-6 text-sm text-slate-500">Invite team members via email to collaborate in real-time.</p>
+            <p className="mb-8 text-base font-medium leading-relaxed text-zinc-500 dark:text-zinc-400">Invite team members via email to collaborate in real-time. They will receive instant access.</p>
             
-            <form onSubmit={handleInvite} className="flex flex-col gap-4">
-              <input
-                type="email"
-                placeholder="Email address"
-                required
-                className="w-full rounded-lg border border-slate-200 p-3 text-sm outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-              />
-              
-              {inviteMessage && (
-                <p className={`text-sm font-medium ${inviteMessage.includes('successfully') ? 'text-green-500' : 'text-red-500'}`}>
-                  {inviteMessage}
-                </p>
-              )}
+            <form onSubmit={handleInvite} className="flex flex-col gap-6">
+              <div>
+                <input
+                  type="email"
+                  placeholder="name@company.com"
+                  required
+                  className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-5 text-base font-medium text-zinc-900 dark:text-zinc-100 outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:border-indigo-500 focus:bg-white dark:focus:bg-zinc-900 focus:ring-4 focus:ring-indigo-500/10"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+                
+                {inviteMessage && (
+                  <p className={`mt-3 text-sm font-bold ${inviteMessage.includes('successfully') ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {inviteMessage}
+                  </p>
+                )}
+              </div>
 
               <button
                 type="submit"
-                className="w-full rounded-lg bg-blue-600 py-3 text-sm font-bold text-white transition-colors hover:bg-blue-700"
+                className="mt-2 w-full rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-500 py-5 text-base font-extrabold text-white shadow-[0_4px_14px_0_rgb(99,102,241,0.39)] transition-all hover:-translate-y-1 hover:shadow-[0_6px_20px_rgba(99,102,241,0.23),0_8px_15px_rgba(99,102,241,0.25)] active:translate-y-0"
               >
                 Send Invite
               </button>
@@ -407,21 +393,20 @@ export default function Board() {
         </div>
       )}
 
-      {/* Cursor Render Engine */}
       {Object.entries(cursors).map(([socketId, cursorData]) => (
         <div
           key={socketId}
-          className="pointer-events-none absolute z-40 flex flex-col items-start transition-all duration-75 ease-linear"
+          className="pointer-events-none absolute z-[100] flex flex-col items-start transition-all duration-100 ease-linear"
           style={{ 
             left: cursorData.x, 
             top: cursorData.y,
             transform: 'translate(-2px, -2px)' 
           }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M5.65376 21.2674L2.59376 3.19744C2.42376 2.22744 3.36376 1.44744 4.26376 1.84744L21.0538 9.38744C21.9938 9.80744 22.0138 11.1474 21.0938 11.5974L14.0738 14.9974L10.6638 22.0274C10.2138 22.9574 8.87376 22.9274 8.46376 21.9974L5.65376 21.2674Z" fill="#3B82F6" stroke="white" strokeWidth="2"/>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
+            <path d="M5.65376 21.2674L2.59376 3.19744C2.42376 2.22744 3.36376 1.44744 4.26376 1.84744L21.0538 9.38744C21.9938 9.80744 22.0138 11.1474 21.0938 11.5974L14.0738 14.9974L10.6638 22.0274C10.2138 22.9574 8.87376 22.9274 8.46376 21.9974L5.65376 21.2674Z" fill="#4F46E5" stroke="white" strokeWidth="2.5" strokeLinejoin="round"/>
           </svg>
-          <div className="ml-4 mt-1 rounded-md bg-blue-600 px-2 py-1 text-xs font-bold text-white shadow-md">
+          <div className="ml-5 mt-1 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-extrabold text-white shadow-lg">
             {cursorData.email.split('@')[0]}
           </div>
         </div>
